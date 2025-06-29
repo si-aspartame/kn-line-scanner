@@ -11,7 +11,7 @@ OUTPUT_FILE_NAME = "stacked.png"
 
 def acquire_images(camera, num_frames):
     camera.Open()
-    print(f"""Width:{camera.Width.GetValue()}, Height:{camera.Height}, PixelFormat:{camera.PixelFormat}""")
+    print(f"""Width:{camera.Width.GetValue()}, Height:{camera.Height.GetValue()}, PixelFormat:{camera.PixelFormat.GetValue()}""")
 
     images = []
     print(f"📸 {num_frames}枚の連続撮像を開始...")
@@ -45,6 +45,9 @@ def main():
     camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
     set_linerate(camera, DEFAULT_LINERATE)#ラインレート5000で初期化
     linerate = get_linerate(camera)
+    if linerate is None:
+        print("⚠️ 現在のラインレート取得に失敗しました。")
+        return
     
     #画像取得＋保存
     images, total_time = acquire_images(camera, NUM_FRAMES)
@@ -54,10 +57,11 @@ def main():
     cv2.imwrite(OUTPUT_FILE_NAME, stacked)
     print(f"🖼️ 画像保存: {OUTPUT_FILE_NAME} ({stacked.shape})")
 
-    img = cv2.imread("./qr_sample/qr_001.png", cv2.IMREAD_GRAYSCALE)#本来はstackedをそのまま使うけど、今はQRコード撮影できてないのでサンプルを利用
+    #img = cv2.imread("./qr_sample/qr_001.png", cv2.IMREAD_GRAYSCALE)#本来はstackedをそのまま使うけど、今はQRコード撮影できてないのでサンプルを利用
+    img = stacked
     correction_factor = get_correction_factor(img)
     if correction_factor is None:
-        print("⚠️ 補正率の取得に失敗しました。ラインレートは変更しません。")
+        print("⚠️ QRコードの読み込み、および補正率の取得に失敗しました。ラインレートは変更しません。")
         return
     corrected_linerate = linerate * correction_factor
     set_linerate(camera, corrected_linerate)
